@@ -64,6 +64,8 @@ class QuizGenerator {
         document.getElementById('submit-quiz').addEventListener('click', () => this.submitQuiz());
         document.getElementById('restart-quiz').addEventListener('click', () => this.restart());
         document.getElementById('file-upload').addEventListener('change', (e) => this.handleFileUpload(e));
+        document.getElementById('exit-quiz').addEventListener('click', () => this.exitQuiz());
+        document.getElementById('app-title').addEventListener('click', () => this.goHome());
     }
 
     setupInputToggle() {
@@ -988,7 +990,14 @@ Example format:
         return insights;
     }
 
-    restart() {
+    exitQuiz() {
+        const confirmed = confirm('Are you sure you want to exit the quiz? Your progress will be lost.');
+        if (confirmed) {
+            this.goHome();
+        }
+    }
+
+    goHome() {
         this.questions = [];
         this.currentQuestionIndex = 0;
         this.userAnswers = [];
@@ -1000,6 +1009,12 @@ Example format:
         document.getElementById('topic-text').value = '';
         document.getElementById('file-upload').value = '';
         document.getElementById('file-content').classList.add('hidden');
+        
+        this.showNotification('Returned to home screen', 'info');
+    }
+
+    restart() {
+        this.goHome();
     }
 }
 

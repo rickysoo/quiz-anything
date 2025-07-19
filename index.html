@@ -26,7 +26,7 @@
     <div class="container">
         <header class="hero-section">
             <div class="hero-content">
-                <h1>🧠 Quiz Anything</h1>
+                <h1 id="app-title" style="cursor: pointer;">🧠 Quiz Anything</h1>
                 <p class="hero-subtitle">AI-powered quiz creation with real-time search capabilities</p>
                 <div class="hero-badges">
                     <span class="badge search-badge">🔍 Search-Enhanced</span>
@@ -92,6 +92,7 @@
             </div>
             <div id="quiz-container"></div>
             <div class="quiz-navigation">
+                <button id="exit-quiz" class="btn-secondary" style="background-color: #e74c3c; color: white;">Exit Quiz</button>
                 <button id="prev-btn" class="btn-secondary" disabled>Previous</button>
                 <button id="next-btn" class="btn-secondary">Next</button>
                 <button id="submit-quiz" class="btn-primary hidden">Submit Quiz</button>
