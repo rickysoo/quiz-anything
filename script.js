@@ -4,29 +4,39 @@ class QuizGenerator {
         this.currentQuestionIndex = 0;
         this.userAnswers = [];
         this.questionCount = 10;
-        this.openaiApiKey = this.getApiKey();
+        this.openaiApiKey = null;
         this.init();
     }
 
-    getApiKey() {
-        // Try to get API key from environment variable or prompt user
-        const apiKey = process?.env?.OPENAI_API_KEY || 
-                      localStorage.getItem('openai_api_key') ||
-                      prompt('Please enter your OpenAI API key (it will be stored locally):');
-        
-        if (apiKey && !localStorage.getItem('openai_api_key')) {
-            localStorage.setItem('openai_api_key', apiKey);
-        }
-        
-        if (!apiKey) {
-            this.showNotification('OpenAI API key is required to generate quizzes. Please refresh and enter your key.', 'error');
-            return null;
-        }
-        
-        return apiKey;
+    async initApiKey() {
+        this.openaiApiKey = await this.getApiKey();
     }
 
-    init() {
+    async getApiKey() {
+        // Try to get API key from Vercel environment API first
+        try {
+            const response = await fetch('/api/env');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.VITE_OPENAI_API_KEY) {
+                    return data.VITE_OPENAI_API_KEY;
+                }
+            }
+        } catch (error) {
+            // Local development fallback - will need to be set manually in browser console
+            // or use localStorage.setItem('dev_api_key', 'your_key') for local testing
+            const localKey = localStorage.getItem('dev_api_key');
+            if (localKey) {
+                return localKey;
+            }
+        }
+        
+        this.showNotification('OpenAI API key is required. Please set VITE_OPENAI_API_KEY environment variable on Vercel.', 'error');
+        return null;
+    }
+
+    async init() {
+        await this.initApiKey();
         this.bindEvents();
         this.setupInputToggle();
         this.setupQuestionCountSelector();

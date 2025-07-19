@@ -33,9 +33,15 @@ Quiz yourself on anything! An AI-powered quiz application that generates interac
    - Copy the key (starts with `sk-proj-...`)
 
 2. **Configure API Key**:
-   - The app will prompt you for the API key on first use
-   - It's stored securely in your browser's local storage
-   - Alternatively, set `OPENAI_API_KEY` environment variable
+   
+   **For Local Development:**
+   - Copy `.env.example` to `.env`
+   - Set `VITE_OPENAI_API_KEY=your_api_key_here` in `.env`
+   - Or the app will prompt you on first use
+   
+   **For Vercel Deployment:**
+   - Add `VITE_OPENAI_API_KEY` environment variable in Vercel dashboard
+   - The app will automatically use it in production
 
 ### **Using the App**
 1. **Choose Your Input Method**:
