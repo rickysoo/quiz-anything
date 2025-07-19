@@ -487,6 +487,15 @@ SEARCH INSTRUCTIONS:
 - Ensure all factual information is accurate as of ${currentYear}
 - Prioritize information from the last 2-3 years when relevant
 
+QUESTION DIVERSITY & UNIQUENESS REQUIREMENTS:
+- Ensure all ${this.questionCount} questions are completely unique and cover different aspects of "${content}"
+- Avoid creating questions that test the same fact, concept, or information in different ways
+- Make sure no two questions have overlapping, similar, or related correct answers
+- Distribute questions across different subtopics, time periods, or aspects when possible
+- Vary question types: include factual recall, conceptual understanding, application, comparison, and analysis questions
+- Avoid repetitive question patterns, structures, or phrasings
+- Each question should focus on a distinctly different piece of information or concept
+
 ${languageInstruction}IMPORTANT: Respond ONLY with a valid JSON array. No other text before or after. Each question object must have exactly these fields:
 - question: string (the question text in ${languageName}, incorporating latest information)
 - options: array of exactly 4 strings (the answer choices in ${languageName})
@@ -510,6 +519,15 @@ Example format:
             : `Generate exactly ${this.questionCount} multiple choice questions based on this document content: "${content.substring(0, 2000)}". 
 
 If the document contains topics that would benefit from current information, search for recent updates and developments related to the document's subject matter to enhance the questions.
+
+QUESTION DIVERSITY & UNIQUENESS REQUIREMENTS:
+- Ensure all ${this.questionCount} questions are completely unique and cover different sections, concepts, or aspects of the document
+- Avoid creating questions that test the same information, fact, or concept from the document in different ways
+- Make sure no two questions have overlapping, similar, or related correct answers
+- Distribute questions across different parts of the document when possible
+- Vary question types: include factual recall, conceptual understanding, application, interpretation, and analysis questions
+- Avoid repetitive question patterns, structures, or phrasings
+- Each question should focus on a distinctly different piece of information or concept from the document
 
 ${languageInstruction}IMPORTANT: Respond ONLY with a valid JSON array. No other text before or after. Each question object must have exactly these fields:
 - question: string (the question text in ${languageName}, incorporating document content and relevant current information)
