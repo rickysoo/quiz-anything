@@ -1,7 +1,3 @@
 {
-  "functions": {
-    "api/env.js": {
-      "runtime": "@vercel/node"
-    }
-  }
+  "buildCommand": "node inject-env.js"
 }

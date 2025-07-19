@@ -18,6 +18,7 @@ api-keys.js
 *api-key*
 *secret*
 *token*
+config.local.js
 
 # IDE files
 .vscode/

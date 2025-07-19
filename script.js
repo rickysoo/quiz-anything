@@ -13,25 +13,23 @@ class QuizGenerator {
     }
 
     async getApiKey() {
-        // Try to get API key from Vercel environment API first
-        try {
-            const response = await fetch('/api/env');
-            if (response.ok) {
-                const data = await response.json();
-                if (data.VITE_OPENAI_API_KEY) {
-                    return data.VITE_OPENAI_API_KEY;
-                }
-            }
-        } catch (error) {
-            // Local development fallback - will need to be set manually in browser console
-            // or use localStorage.setItem('dev_api_key', 'your_key') for local testing
-            const localKey = localStorage.getItem('dev_api_key');
-            if (localKey) {
-                return localKey;
-            }
+        // For Vercel deployment - API key will be injected during build
+        if (window.VERCEL_ENV_API_KEY) {
+            return window.VERCEL_ENV_API_KEY;
         }
         
-        this.showNotification('OpenAI API key is required. Please set VITE_OPENAI_API_KEY environment variable on Vercel.', 'error');
+        // Local development fallback - check for config.local.js
+        if (window.LOCAL_CONFIG && window.LOCAL_CONFIG.VITE_OPENAI_API_KEY) {
+            return window.LOCAL_CONFIG.VITE_OPENAI_API_KEY;
+        }
+        
+        // Fallback to localStorage for manual testing
+        const localKey = localStorage.getItem('dev_api_key');
+        if (localKey) {
+            return localKey;
+        }
+        
+        this.showNotification('OpenAI API key is required. Please set up local config or environment variable.', 'error');
         return null;
     }
 
