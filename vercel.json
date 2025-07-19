@@ -1,13 +1,7 @@
 {
   "functions": {
     "api/env.js": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node@3.0.0"
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/env",
-      "destination": "/api/env.js"
-    }
-  ]
+  }
 }
