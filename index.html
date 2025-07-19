@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Anything - AI-Powered Learning</title>
+    <meta name="description" content="Quiz yourself on anything! AI-powered quiz creation from any topic or document. Generate interactive quizzes instantly with intelligent question generation.">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Quiz Anything">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PDF.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Mammoth.js for DOCX files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+</head>
+<body>
+    <!-- Notification system -->
+    <div id="notification-container"></div>
+    
+    <div class="container">
+        <header class="hero-section">
+            <div class="hero-content">
+                <h1>🧠 Quiz Anything</h1>
+                <p class="hero-subtitle">AI-powered quiz creation with real-time search capabilities</p>
+                <div class="hero-badges">
+                    <span class="badge search-badge">🔍 Search-Enhanced</span>
+                    <span class="badge live-badge">📡 Live Data</span>
+                    <span class="badge current-badge">⚡ Current Info</span>
+                </div>
+            </div>
+        </header>
+        
+        <div id="input-section" class="section">
+            <h2>🎯 Create Your Quiz</h2>
+            <div class="quiz-settings">
+                <div class="setting-group">
+                    <label class="setting-label">📊 How many questions?</label>
+                    <div class="question-count-selector">
+                        <button type="button" class="count-btn" data-count="5">5</button>
+                        <button type="button" class="count-btn active" data-count="10">10</button>
+                        <button type="button" class="count-btn" data-count="15">15</button>
+                        <button type="button" class="count-btn" data-count="20">20</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-method">
+                <label class="input-option">
+                    <input type="radio" name="inputType" value="topic" checked>
+                    <span class="option-icon">💭</span>
+                    <span class="option-text">Choose a topic</span>
+                </label>
+                <label class="input-option">
+                    <input type="radio" name="inputType" value="document">
+                    <span class="option-icon">📄</span>
+                    <span class="option-text">Upload a document</span>
+                </label>
+            </div>
+            
+            <div id="topic-input" class="input-container">
+                <textarea id="topic-text" placeholder="What would you like to be quizzed on? (e.g., History, Science, Technology)"></textarea>
+            </div>
+            
+            <div id="document-input" class="input-container hidden">
+                <input type="file" id="file-upload" accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,.rtf,.odt">
+                <p class="file-info">Upload any text file, PDF, or Word document</p>
+                <div id="file-content" class="hidden"></div>
+            </div>
+            
+            <button id="generate-quiz" class="btn-primary">
+                <span class="btn-icon">🚀</span>
+                <span class="btn-text">Start the Quiz</span>
+                <span class="btn-subtitle">10 questions</span>
+            </button>
+        </div>
+        
+        <div id="quiz-section" class="section hidden">
+            <h2>🧩 Quiz Time!</h2>
+            <div id="quiz-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text">
+                    Question <span id="current-question">1</span> of <span id="total-questions">10</span>
+                </div>
+            </div>
+            <div id="quiz-container"></div>
+            <div class="quiz-navigation">
+                <button id="prev-btn" class="btn-secondary" disabled>Previous</button>
+                <button id="next-btn" class="btn-secondary">Next</button>
+                <button id="submit-quiz" class="btn-primary hidden">Submit Quiz</button>
+            </div>
+        </div>
+        
+        <div id="results-section" class="section hidden">
+            <h2>📊 How did you do?</h2>
+            <div id="score-display"></div>
+            <div id="performance-report"></div>
+            <div id="detailed-results"></div>
+            <button id="restart-quiz" class="btn-primary">Try Another Quiz</button>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
