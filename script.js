@@ -449,7 +449,7 @@ class QuizGenerator {
 
     async validateContent(content, inputType) {
         // Basic validation checks first
-        if (!content || content.trim().length < 3) {
+        if (!content || content.trim().length < 2) {
             return {
                 isValid: false,
                 message: 'Please write a bit more so we can create good questions for you.'

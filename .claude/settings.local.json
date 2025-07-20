@@ -12,7 +12,9 @@
       "Bash(gh repo view:*)",
       "Bash(python:*)",
       "Bash(mkdir:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(grep:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }
