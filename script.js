@@ -762,7 +762,7 @@ class QuizGenerator {
         const difficultyDescriptions = {
             'easy': 'Easy difficulty: Generate BASIC introductory questions suitable for beginners. Focus ONLY on: simple definitions, basic facts, fundamental concepts, who/what/when questions. Avoid analysis, application, or complex reasoning. Use simple vocabulary and straightforward questions.',
             'medium': 'Medium difficulty: Generate questions that require APPLICATION and moderate analysis. Focus on: practical scenarios, how/why questions, comparing concepts, problem-solving, cause-and-effect relationships. Require some thinking beyond basic recall.',
-            'hard': 'Hard difficulty: Generate ADVANCED questions requiring EXPERT knowledge. Focus on: complex case studies, multi-step reasoning, synthesis of multiple concepts, evaluation and critique, latest cutting-edge developments, expert-level analysis, hypothetical scenarios requiring deep understanding.'
+            'hard': 'Hard difficulty: Generate ADVANCED questions requiring EXPERT knowledge. Focus on: complex case studies, multi-step reasoning, synthesis of multiple concepts, evaluation and critique, expert-level analysis, hypothetical scenarios requiring deep understanding.'
         };
 
         const difficultyInstruction = difficultyDescriptions[difficulty] || difficultyDescriptions['medium'];
@@ -834,7 +834,7 @@ EXPERT-LEVEL FOCUS:
 - Focus on advanced, specialized knowledge and intricate details
 - Test understanding of complex relationships and nuanced concepts
 - Include questions that require synthesis of multiple ideas
-- Cover cutting-edge developments and latest research
+- Cover advanced concepts and specialized knowledge
 - Emphasize depth over breadth of knowledge`;
         } else if (clarificationType === 'code') {
             topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions focusing on CODE AND PROGRAMMING CONCEPTS from the document.
@@ -873,15 +873,13 @@ ANALYTICAL FOCUS:
 - Cover methodology validation and research design
 - Emphasize critical evaluation and analytical reasoning`;
         } else {
-            // Default general approach
-            topicPrompt = `Search for the latest information about "${content}" and generate exactly ${this.questionCount} multiple choice questions based on current, up-to-date information as of ${currentDate}. 
+            // Default general approach - only for topic-based input, not files
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions about "${content}".
 
 GENERAL KNOWLEDGE FOCUS:
-- Look up recent developments, current statistics, latest research, and up-to-date facts about "${content}"
-- Include questions about recent events, current leaders, latest discoveries, or recent changes in this field
 - Test factual knowledge, historical information, features, and characteristics
-- Ensure all factual information is accurate as of ${currentYear}
-- Prioritize information from the last 2-3 years when relevant`;
+- Focus on well-established facts and information about the topic
+- Include questions about key concepts, definitions, and important aspects`;
         }
 
         const prompt = inputType === 'file' 
