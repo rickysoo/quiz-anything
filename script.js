@@ -534,6 +534,7 @@ ${languageInstruction}IMPORTANT: Respond ONLY with a valid JSON array. No other 
 - question: string (the question text in ${languageName}, incorporating latest information)
 - options: array of exactly 4 strings (the answer choices in ${languageName})
 - correct: number (index 0-3 of the correct option)
+- explanation: string (brief explanation of why the correct answer is right and why other options are incorrect)
 
 Focus on creating questions that test knowledge of:
 1. Recent developments and current state
@@ -547,7 +548,8 @@ Example format:
   {
     "question": "What is the latest development in artificial intelligence as of ${currentYear}?",
     "options": ["GPT-3 release", "ChatGPT launch", "GPT-4 improvements", "Current AI advancement"],
-    "correct": 3
+    "correct": 3,
+    "explanation": "Current AI advancement is correct as it represents the most recent developments. GPT-3 and ChatGPT are from earlier years, while GPT-4 improvements, though recent, are not the absolute latest advancement in the field."
   }
 ]`
             : `Generate exactly ${this.questionCount} multiple choice questions based on this document content: "${content.substring(0, 2000)}". 
@@ -569,13 +571,15 @@ ${languageInstruction}IMPORTANT: Respond ONLY with a valid JSON array. No other 
 - question: string (the question text in ${languageName}, incorporating document content and relevant current information)
 - options: array of exactly 4 strings (the answer choices in ${languageName})  
 - correct: number (index 0-3 of the correct option)
+- explanation: string (brief explanation of why the correct answer is right and why other options are incorrect)
 
 Example format:
 [
   {
     "question": "Based on the document and current information, what is the main topic discussed?",
     "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correct": 1
+    "correct": 1,
+    "explanation": "Option B is correct because the document primarily focuses on this topic as evidenced by the main sections and key points discussed. The other options are either tangential topics or not covered in the document."
   }
 ]`;
 
@@ -873,7 +877,8 @@ Example format:
                 question: question.question,
                 userAnswer: userAnswer !== null ? question.options[userAnswer] : 'Not answered',
                 correctAnswer: question.options[question.correct],
-                isCorrect: isCorrect
+                isCorrect: isCorrect,
+                explanation: question.explanation || ''
             });
         });
 
@@ -920,6 +925,7 @@ Example format:
                             <p><strong>Question:</strong> ${result.question}</p>
                             <p><strong>Your Answer:</strong> ${result.userAnswer}</p>
                             ${!result.isCorrect ? `<p><strong>Correct Answer:</strong> ${result.correctAnswer}</p>` : ''}
+                            ${result.explanation ? `<p class="explanation"><strong>Explanation:</strong> ${result.explanation}</p>` : ''}
                         </div>
                     </div>
                 `).join('')}

@@ -801,6 +801,15 @@ body::before {
     color: #2d3748;
 }
 
+.explanation {
+    background-color: #f7fafc;
+    border-left: 4px solid #4299e1;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 4px;
+    font-style: italic;
+}
+
 .hidden {
     display: none;
 }
