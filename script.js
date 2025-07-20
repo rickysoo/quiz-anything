@@ -10,6 +10,7 @@ class QuizGenerator {
             this.currentTopic = null;
             this.currentInputType = null;
             this.currentFileContent = null;
+            this.languageCache = new Map(); // Cache for language detection results
             this.openaiApiKey = null;
             this.init();
         } catch (error) {
@@ -197,37 +198,123 @@ class QuizGenerator {
         }
     }
 
-    detectLanguage(content) {
-        
-        // Standard content-based language detection
-        const languagePatterns = {
-            'es': /\b(el|la|los|las|de|en|un|una|con|por|para|que|se|es|son|está|están|tiene|tienen|muy|más|pero|como|cuando|donde|porque|si|no|sí|también|hasta|desde)\b/gi,
-            'fr': /\b(le|la|les|de|du|des|un|une|et|ou|est|sont|avec|pour|dans|sur|par|ce|cette|ces|que|qui|se|ne|pas|très|plus|mais|comme|quand|où|parce|si|oui|non|aussi|jusqu|depuis)\b/gi,
-            'de': /\b(der|die|das|den|dem|des|ein|eine|und|oder|ist|sind|mit|für|in|auf|von|zu|bei|nach|über|unter|zwischen|dass|wie|wenn|wo|weil|ob|ja|nein|auch|bis|seit)\b/gi,
-            'it': /\b(il|la|lo|gli|le|di|da|in|con|su|per|tra|fra|che|se|è|sono|ha|hanno|molto|più|ma|come|quando|dove|perché|se|no|sì|anche|fino|da)\b/gi,
-            'pt': /\b(o|a|os|as|de|em|um|uma|com|por|para|que|se|é|são|tem|têm|muito|mais|mas|como|quando|onde|porque|se|não|sim|também|até|desde)\b/gi,
-            'ru': /\b(в|на|и|с|по|для|от|до|за|при|над|под|из|к|о|об|про|через|между|что|как|когда|где|почему|если|да|нет|также|уже|еще)\b/gi,
-            'zh': /[\u4e00-\u9fff]/g,
-            'ja': /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff]/g,
-            'ar': /[\u0600-\u06ff]/g,
-            'nl': /\b(de|het|een|van|in|op|met|voor|door|naar|over|onder|tussen|dat|die|dit|deze|en|of|is|zijn|heeft|hebben|zeer|meer|maar|als|wanneer|waar|omdat|ja|nee|ook|tot|sinds)\b/gi,
-            'ko': /[\uac00-\ud7af\u1100-\u11ff\u3130-\u318f]/g
-        };
-
-        let maxMatches = 0;
-        let detectedLanguage = 'en';
-
-        for (const [lang, pattern] of Object.entries(languagePatterns)) {
-            const matches = content.match(pattern);
-            const matchCount = matches ? matches.length : 0;
-            if (matchCount > maxMatches) {
-                maxMatches = matchCount;
-                detectedLanguage = lang;
-            }
+    async detectLanguage(content) {
+        // Create cache key from content hash (simple approach)
+        const cacheKey = content.substring(0, 100); // Use first 100 chars as simple cache key
+        if (this.languageCache.has(cacheKey)) {
+            console.log('Using cached language detection result');
+            return this.languageCache.get(cacheKey);
         }
 
-        // If no pattern matches significantly, default to English
-        return maxMatches > 5 ? detectedLanguage : 'en';
+        // Fast detection for obvious non-Latin scripts
+        if (/[\u4e00-\u9fff]/.test(content)) {
+            this.languageCache.set(cacheKey, 'zh');
+            return 'zh'; // Chinese
+        }
+        if (/[\u3040-\u309f\u30a0-\u30ff]/.test(content)) {
+            this.languageCache.set(cacheKey, 'ja');
+            return 'ja'; // Japanese  
+        }
+        if (/[\u0600-\u06ff]/.test(content)) {
+            this.languageCache.set(cacheKey, 'ar');
+            return 'ar'; // Arabic
+        }
+        if (/[\uac00-\ud7af]/.test(content)) {
+            this.languageCache.set(cacheKey, 'ko');
+            return 'ko'; // Korean
+        }
+        if (/[\u0400-\u04ff]/.test(content)) {
+            this.languageCache.set(cacheKey, 'ru');
+            return 'ru'; // Cyrillic/Russian
+        }
+
+        // For Latin scripts, use LLM for accurate detection
+        try {
+            // Skip LLM detection if no API key available
+            if (!this.openaiApiKey) {
+                return 'en';
+            }
+
+            // Optimize content sample - use meaningful text, skip headers/metadata
+            const sample = this.getLanguageDetectionSample(content);
+            
+            // Skip detection for very short content
+            if (sample.length < 50) {
+                return 'en';
+            }
+            
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.openaiApiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a language detection expert. Analyze the primary language of the given text content. Ignore foreign brand names, company names, or occasional foreign words. Focus on the main language the document is written in.'
+                        },
+                        {
+                            role: 'user',
+                            content: `What is the primary language of this text? Respond with only the ISO 639-1 language code (en, es, fr, de, it, pt, nl, etc.):
+
+"${sample}"`
+                        }
+                    ],
+                    max_tokens: 10,
+                    temperature: 0
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const detectedLang = data.choices[0].message.content.trim().toLowerCase();
+                
+                // Validate response is a known language code
+                const validLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ru', 'zh', 'ja', 'ar', 'ko'];
+                if (validLanguages.includes(detectedLang)) {
+                    console.log(`Language detected: ${detectedLang}`);
+                    this.languageCache.set(cacheKey, detectedLang);
+                    return detectedLang;
+                }
+                console.warn(`Invalid language code received: ${detectedLang}, defaulting to English`);
+            } else {
+                console.warn(`Language detection API failed: ${response.status} ${response.statusText}`);
+            }
+        } catch (error) {
+            console.warn('LLM language detection failed, defaulting to English:', error);
+        }
+        
+        // Fallback to English if detection fails
+        this.languageCache.set(cacheKey, 'en');
+        return 'en';
+    }
+
+    getLanguageDetectionSample(content) {
+        // Remove common metadata and headers that might confuse detection
+        let cleanContent = content
+            .replace(/^[\s\S]*?(?=\w{10})/m, '') // Skip initial metadata/headers
+            .replace(/\b[A-Z]{2,}\b/g, '') // Remove acronyms that might be language-ambiguous
+            .replace(/\b\w+@\w+\.\w+\b/g, '') // Remove email addresses
+            .replace(/https?:\/\/\S+/g, '') // Remove URLs
+            .replace(/\b\d{4}-\d{2}-\d{2}\b/g, '') // Remove dates
+            .trim();
+
+        // Take multiple small samples from different parts for better representation
+        const length = cleanContent.length;
+        if (length <= 500) {
+            return cleanContent;
+        }
+
+        // Take samples from beginning, middle, and end
+        const sampleSize = 150;
+        const beginning = cleanContent.substring(0, sampleSize);
+        const middle = cleanContent.substring(Math.floor(length * 0.4), Math.floor(length * 0.4) + sampleSize);
+        const end = cleanContent.substring(length - sampleSize);
+        
+        return `${beginning} ${middle} ${end}`.substring(0, 500);
     }
 
     async handleFileUpload(event) {
@@ -323,128 +410,75 @@ class QuizGenerator {
     detectTopicAmbiguity(content) {
         const cleanContent = content.toLowerCase().trim();
         
-        // Pattern-based ambiguity detection for broader coverage
-        const ambiguityPatterns = [
-            // Programming languages and technologies
-            {
-                pattern: /^(python|javascript|java|c\+\+|c#|ruby|php|go|rust|swift|kotlin|typescript|html|css|sql|react|angular|vue|node\.?js|express|django|flask|spring|laravel)$/i,
-                createOptions: (topic) => [
-                    { type: 'knowledge', label: `Knowledge about ${topic} (history, features, facts)`, description: `Learn about the ${topic} technology, its history, and characteristics` },
-                    { type: 'skills', label: `${topic} programming/technical skills`, description: `Test practical coding abilities and technical implementation in ${topic}` }
-                ]
-            },
-            // Human languages (supports many languages including non-Latin scripts)
-            {
-                pattern: /^(english|french|spanish|german|italian|portuguese|russian|chinese|japanese|korean|arabic|hindi|dutch|swedish|norwegian|danish|finnish|greek|turkish|hebrew|thai|vietnamese|indonesian|malay|filipino|tagalog|français|español|deutsch|italiano|português|русский|中文|日本語|한국어|العربية|हिन्दी|ελληνικά|türkçe|עברית|ไทย|tiếng việt|bahasa indonesia|bahasa melayu)$/i,
-                createOptions: (topic) => [
-                    { type: 'knowledge', label: `Knowledge about ${topic} (culture, history, countries)`, description: `Learn about the culture, history, and countries where ${topic} is spoken` },
-                    { type: 'skills', label: `${topic} language skills (grammar, vocabulary, comprehension)`, description: `Test practical language abilities and fluency in ${topic}` }
-                ]
-            },
-            // Countries and regions
-            {
-                pattern: /^(china|japan|korea|france|germany|spain|italy|russia|brazil|mexico|india|canada|australia|england|britain|uk|usa|america|中国|日本|韩国|한국|フランス|ドイツ|スペイン|イタリア|ロシア|ブラジル|メキシコ|インド|カナダ|オーストラリア|イギリス|アメリカ)$/i,
-                createOptions: (topic) => [
-                    { type: 'knowledge', label: `General knowledge about ${topic}`, description: `Test knowledge about geography, politics, current events, and general facts` },
-                    { type: 'culture', label: `${topic} culture and history`, description: `Focus on cultural traditions, historical events, and social aspects` },
-                    { type: 'language', label: `${topic} language proficiency`, description: `Test language skills if you want to practice the local language` }
-                ]
-            },
-            // Academic subjects that could be theoretical or practical
-            {
-                pattern: /^(mathematics|math|physics|chemistry|biology|economics|psychology|philosophy|statistics|calculus|algebra|geometry|organic chemistry|biochemistry|molecular biology|microeconomics|macroeconomics|cognitive psychology|social psychology|logic|ethics|data science|machine learning|artificial intelligence|ai|ml)$/i,
-                createOptions: (topic) => [
-                    { type: 'theory', label: `${topic} theory and concepts`, description: `Test theoretical knowledge, definitions, and conceptual understanding` },
-                    { type: 'application', label: `${topic} practical application`, description: `Focus on problem-solving, real-world applications, and hands-on skills` }
-                ]
-            },
-            // Business and professional topics
-            {
-                pattern: /^(marketing|finance|accounting|management|business|economics|law|medicine|engineering|design|architecture|project management|digital marketing|financial planning|corporate law|medical practice|software engineering|graphic design)$/i,
-                createOptions: (topic) => [
-                    { type: 'theory', label: `${topic} theory and principles`, description: `Test theoretical knowledge and fundamental concepts` },
-                    { type: 'practice', label: `${topic} practical skills`, description: `Focus on real-world application and professional practice` }
-                ]
-            },
-            // Arts and creative fields
-            {
-                pattern: /^(music|art|painting|drawing|photography|writing|literature|poetry|dance|theater|film|cinema|sculpture|design)$/i,
-                createOptions: (topic) => [
-                    { type: 'history', label: `${topic} history and theory`, description: `Learn about the history, movements, and theoretical aspects` },
-                    { type: 'technique', label: `${topic} techniques and practice`, description: `Focus on practical skills, methods, and creative techniques` }
-                ]
-            },
-            // Sports and activities
-            {
-                pattern: /^(football|soccer|basketball|tennis|baseball|golf|swimming|running|cycling|yoga|fitness|boxing|martial arts|chess|poker)$/i,
-                createOptions: (topic) => [
-                    { type: 'knowledge', label: `${topic} rules and history`, description: `Test knowledge about rules, history, famous players/events` },
-                    { type: 'technique', label: `${topic} techniques and strategy`, description: `Focus on practical skills, techniques, and strategic knowledge` }
-                ]
-            }
-        ];
+        // Only show clarification for truly ambiguous topics where user intent is unclear
         
-        // Check each pattern to see if it matches
-        for (const ambiguityPattern of ambiguityPatterns) {
-            const match = cleanContent.match(ambiguityPattern.pattern);
-            if (match) {
-                const topic = match[1]; // Get the captured topic name
-                return ambiguityPattern.createOptions(topic);
-            }
-        }
-        
-        // Generic fallback for any single-word topic that might be ambiguous
-        if (cleanContent.split(' ').length === 1 && cleanContent.length > 2) {
+        // Programming languages - could be about language itself or coding skills
+        if (/^(python|javascript|java|c\+\+|react|angular|vue)$/i.test(cleanContent)) {
             return [
-                { type: 'general', label: `General knowledge about ${cleanContent}`, description: `Test broad factual knowledge and current information` },
-                { type: 'deep', label: `In-depth ${cleanContent} expertise`, description: `Focus on detailed, specialized knowledge for experts` },
-                { type: 'practical', label: `Practical ${cleanContent} skills`, description: `Test hands-on abilities and real-world application` }
+                { type: 'knowledge', label: `About ${content}`, description: `History, features, and characteristics of ${content}` },
+                { type: 'skills', label: `${content} programming`, description: `Coding syntax, best practices, and development skills` }
             ];
         }
         
-        return null; // No ambiguity detected
+        // Major countries - could focus on different aspects
+        if (/^(japan|china|france|germany|brazil|india|russia|usa|america)$/i.test(cleanContent)) {
+            return [
+                { type: 'knowledge', label: `${content} facts`, description: `Geography, politics, economy, and general knowledge` },
+                { type: 'culture', label: `${content} culture`, description: `History, traditions, arts, and cultural aspects` }
+            ];
+        }
+        
+        // Broad academic subjects that have very different aspects
+        if (/^(psychology|economics|physics|chemistry|mathematics|philosophy|medicine)$/i.test(cleanContent)) {
+            return [
+                { type: 'theory', label: `${content} theory`, description: `Concepts, definitions, and theoretical foundations` },
+                { type: 'application', label: `Applied ${content}`, description: `Real-world applications and practical problem-solving` }
+            ];
+        }
+        
+        return null; // No clarification needed - proceed with default quiz
     }
 
     detectDocumentAmbiguity(content) {
-        // For documents, analyze content to suggest different quiz approaches
-        const contentLength = content.length;
-        const hasCodeSnippets = /```|function\s+\w+|class\s+\w+|import\s+|from\s+\w+|<\w+>|{[\s\S]*}/.test(content);
-        const hasFormulas = /\$.*\$|\\[a-zA-Z]+|∫|∑|√|≤|≥|∞|α|β|γ|δ|θ|λ|μ|π|σ|φ|ψ|ω/.test(content);
-        const hasBusinessTerms = /revenue|profit|budget|strategy|management|marketing|sales|customer|client|stakeholder|ROI|KPI|B2B|B2C/.test(content.toLowerCase());
-        const hasScientificTerms = /hypothesis|experiment|data|analysis|research|study|methodology|results|conclusion|correlation|variable/.test(content.toLowerCase());
+        // Only show clarification for documents that truly have multiple distinct approaches
         
-        // Only show clarification for longer documents that could benefit from different approaches
-        if (contentLength > 500) {
-            const options = [
-                { type: 'general', label: 'General comprehension quiz', description: 'Test overall understanding of the main concepts and facts' }
+        // Look for multiple clear programming indicators to avoid false positives
+        const codeBlocks = (content.match(/```[\s\S]*?```/g) || []).length;
+        const functionDeclarations = (content.match(/function\s+\w+\s*\(/g) || []).length;
+        const classDeclarations = (content.match(/class\s+\w+\s*{/g) || []).length;
+        const importStatements = (content.match(/import\s+\w+\s+from/g) || []).length;
+        
+        const codeIndicators = codeBlocks + functionDeclarations + classDeclarations + importStatements;
+        const hasSignificantCode = codeIndicators >= 3; // Require multiple programming elements
+        
+        const hasFormulas = /\$.*\$|\\[a-zA-Z]+|∫|∑|√|≤|≥|∞|α|β|γ|δ|θ|λ|μ|π|σ|φ|ψ|ω/.test(content);
+        const isResearchPaper = /abstract|methodology|results|conclusion|hypothesis|experiment|p\s*<\s*0\.05|statistical|correlation/.test(content.toLowerCase());
+        
+        // Programming documentation with significant code
+        if (hasSignificantCode && content.length > 2000) {
+            return [
+                { type: 'concepts', label: 'Programming concepts', description: 'Focus on programming principles, patterns, and best practices' },
+                { type: 'code', label: 'Code implementation', description: 'Test specific syntax, functions, and technical details' }
             ];
-            
-            if (hasCodeSnippets) {
-                options.push({ type: 'code', label: 'Code-focused quiz', description: 'Focus on programming concepts, syntax, and technical implementation' });
-            }
-            
-            if (hasFormulas) {
-                options.push({ type: 'technical', label: 'Technical/mathematical quiz', description: 'Focus on formulas, calculations, and technical concepts' });
-            }
-            
-            if (hasBusinessTerms) {
-                options.push({ type: 'business', label: 'Business application quiz', description: 'Focus on practical business applications and strategic thinking' });
-            }
-            
-            if (hasScientificTerms) {
-                options.push({ type: 'analytical', label: 'Research and analysis quiz', description: 'Focus on methodology, data interpretation, and critical thinking' });
-            }
-            
-            // Add detailed vs. broad option for any substantial document
-            options.push({ type: 'detailed', label: 'Detailed knowledge quiz', description: 'Test specific details, facts, and precise information from the document' });
-            
-            // Only show clarification if we have multiple meaningful options
-            if (options.length > 2) {
-                return options;
-            }
         }
         
-        return null;
+        // Academic/research papers
+        if (isResearchPaper && content.length > 3000) {
+            return [
+                { type: 'theory', label: 'Theoretical understanding', description: 'Focus on concepts, theories, and background knowledge' },
+                { type: 'research', label: 'Research methodology', description: 'Test methodology, data analysis, and research findings' }
+            ];
+        }
+        
+        // Mathematical/technical documents with formulas
+        if (hasFormulas && content.length > 1500) {
+            return [
+                { type: 'concepts', label: 'Mathematical concepts', description: 'Focus on principles, definitions, and theoretical understanding' },
+                { type: 'application', label: 'Problem solving', description: 'Test formula application and calculation methods' }
+            ];
+        }
+        
+        return null; // No clarification needed for most documents
     }
 
     async validateContent(content, inputType) {
@@ -465,86 +499,13 @@ class QuizGenerator {
             };
         }
 
-        // Use OpenAI to validate content suitability
-        try {
-            const validationPrompt = `Analyze the following content and determine if it's suitable for creating educational quiz questions. 
-
-Content: "${content.substring(0, 1000)}"
-
-Respond with only a JSON object in this format:
-{
-  "suitable": true/false,
-  "reason": "brief explanation",
-  "suggestions": "suggestions if not suitable"
-}
-
-Content is suitable if it contains educational, factual, or informational material, including:
-- Academic topics and subjects
-- Technical terms, acronyms, and professional frameworks (e.g., "EPF RIA framework", "API development", "GDPR compliance")
-- Business and financial concepts
-- Scientific and medical terminology
-- Technology and programming topics
-- Current events and policy discussions
-- Professional certifications and standards
-
-Content is NOT suitable if it's:
-- Just random text, symbols, or truly meaningless gibberish (not legitimate technical terms)
-- Personal information like contact lists or addresses
-- Code/data dumps without any educational context
-- Pure creative writing without factual content
-- Simple lists without educational value
-
-IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary that may appear unusual but are legitimate educational topics.`;
-
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.openaiApiKey}`
-                },
-                body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    messages: [
-                        {
-                            role: 'system',
-                            content: 'You are a content validator for educational quiz generation. Respond only with valid JSON.'
-                        },
-                        {
-                            role: 'user',
-                            content: validationPrompt
-                        }
-                    ],
-                    max_tokens: 300
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                let responseText = data.choices[0].message.content.trim();
-                
-                // Clean response
-                responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-                const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    responseText = jsonMatch[0];
-                }
-
-                const validation = JSON.parse(responseText);
-                
-                if (!validation.suitable) {
-                    let message = `This content is not suitable for creating quiz questions.\n\nReason: ${validation.reason}`;
-                    if (validation.suggestions) {
-                        message += `\n\nSuggestions: ${validation.suggestions}`;
-                    }
-                    return {
-                        isValid: false,
-                        message: message
-                    };
-                }
-            }
-        } catch (error) {
-            console.warn('Content validation API call failed, proceeding with basic validation:', error);
+        // Skip OpenAI validation for file uploads - any uploaded document is considered valid
+        if (inputType === 'file') {
+            return { isValid: true };
         }
+
+        // For text input, only do basic validation to catch obvious gibberish
+        // Accept any meaningful content - the AI will determine if it can create questions
 
         return { isValid: true };
     }
@@ -703,6 +664,30 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
         document.getElementById('confirm-clarification').disabled = true;
     }
 
+    getDocumentSample(content) {
+        if (!content || content.length <= 8000) {
+            return content;
+        }
+        
+        // For longer documents, take samples from different parts
+        const length = content.length;
+        const sampleSize = 2500;
+        
+        // Take beginning (skip possible header/metadata)
+        const start = Math.min(500, length * 0.1);
+        const beginning = content.substring(start, start + sampleSize);
+        
+        // Take middle section
+        const middleStart = Math.floor(length * 0.4);
+        const middle = content.substring(middleStart, middleStart + sampleSize);
+        
+        // Take end section
+        const endStart = Math.max(length - sampleSize - 500, middleStart + sampleSize);
+        const end = content.substring(endStart, endStart + sampleSize);
+        
+        return `${beginning}\n\n[...document continues...]\n\n${middle}\n\n[...document continues...]\n\n${end}`;
+    }
+
     async proceedWithQuizGeneration(content, inputType, clarificationType = null) {
         // Store current quiz parameters for retaking
         this.currentTopic = content;
@@ -728,14 +713,14 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
             
             generateBtn.textContent = 'Creating your quiz...';
             // Detect language of content
-            const detectedLanguage = this.detectLanguage(content);
+            const detectedLanguage = await this.detectLanguage(content);
             this.questions = await this.generateMCQsWithOpenAI(content, inputType, detectedLanguage, this.difficulty, clarificationType);
             this.userAnswers = new Array(this.questionCount).fill(null);
             this.currentQuestionIndex = 0;
             
             // Show success notification
             if (inputType === 'topic') {
-                this.showNotification(`🎉 Your quiz is ready! ${this.questionCount} questions based on the latest information.`, 'success');
+                this.showNotification(`🎉 Your quiz is ready! ${this.questionCount} questions created.`, 'success');
             } else {
                 this.showNotification(`🎉 Quiz created from your document! ${this.questionCount} questions ready.`, 'success');
             }
@@ -743,7 +728,8 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
             this.showQuizSection();
             this.displayCurrentQuestion();
         } catch (error) {
-            this.showNotification('Sorry, there was a problem creating your quiz. Please try again.', 'error');
+            console.error('Quiz generation error:', error);
+            this.showNotification(`Sorry, there was a problem creating your quiz: ${error.message}`, 'error');
         } finally {
             generateBtn.disabled = false;
             generateBtn.innerHTML = `
@@ -898,45 +884,10 @@ GENERAL KNOWLEDGE FOCUS:
 - Prioritize information from the last 2-3 years when relevant`;
         }
 
-        const prompt = inputType === 'topic' 
-            ? `${topicPrompt}
+        const prompt = inputType === 'file' 
+            ? `Generate exactly ${this.questionCount} multiple choice questions based on this document content: "${this.getDocumentSample(content)}". 
 
-DIFFICULTY LEVEL: ${difficultyInstruction}
-
-QUESTION DIVERSITY & UNIQUENESS REQUIREMENTS:
-- Ensure all ${this.questionCount} questions are completely unique and cover different aspects of "${content}"
-- Avoid creating questions that test the same fact, concept, or information in different ways
-- Make sure no two questions have overlapping, similar, or related correct answers
-- Distribute questions across different subtopics, time periods, or aspects when possible
-- Vary question types appropriate to difficulty level: for Easy (factual recall, simple definitions), for Medium (application, comparison, moderate reasoning), for Hard (analysis, synthesis, evaluation)
-- Avoid repetitive question patterns, structures, or phrasings
-- Each question should focus on a distinctly different piece of information or concept
-
-${languageInstruction}IMPORTANT: Respond ONLY with a valid JSON array. No other text before or after. Each question object must have exactly these fields:
-- question: string (the question text in ${languageName}, incorporating latest information)
-- options: array of exactly 4 strings (the answer choices in ${languageName})
-- correct: number (index 0-3 of the correct option)
-- explanation: string (brief explanation of why the correct answer is right and why other options are incorrect)
-
-Focus on creating questions that test knowledge of:
-1. Recent developments and current state
-2. Latest statistics or data
-3. Current key figures or leaders
-4. Recent discoveries or innovations
-5. Current best practices or methods
-
-Example format:
-[
-  {
-    "question": "What is the latest development in artificial intelligence as of ${currentYear}?",
-    "options": ["GPT-3 release", "ChatGPT launch", "GPT-4 improvements", "Current AI advancement"],
-    "correct": 3,
-    "explanation": "Current AI advancement is correct as it represents the most recent developments. GPT-3 and ChatGPT are from earlier years, while GPT-4 improvements, though recent, are not the absolute latest advancement in the field."
-  }
-]`
-            : `Generate exactly ${this.questionCount} multiple choice questions based on this document content: "${content.substring(0, 2000)}". 
-
-If the document contains topics that would benefit from current information, search for recent updates and developments related to the document's subject matter to enhance the questions.
+IMPORTANT: Create questions ONLY based on the content provided in this document. Do NOT search for or include external information, current events, or recent developments not mentioned in the document.
 
 DIFFICULTY LEVEL: ${difficultyInstruction}
 
@@ -950,7 +901,7 @@ QUESTION DIVERSITY & UNIQUENESS REQUIREMENTS:
 - Each question should focus on a distinctly different piece of information or concept from the document
 
 ${languageInstruction}IMPORTANT: Respond ONLY with a valid JSON array. No other text before or after. Each question object must have exactly these fields:
-- question: string (the question text in ${languageName}, incorporating document content and relevant current information)
+- question: string (the question text in ${languageName}, based strictly on the document content provided)
 - options: array of exactly 4 strings (the answer choices in ${languageName})  
 - correct: number (index 0-3 of the correct option)
 - explanation: string (brief explanation of why the correct answer is right and why other options are incorrect)
@@ -958,10 +909,40 @@ ${languageInstruction}IMPORTANT: Respond ONLY with a valid JSON array. No other 
 Example format:
 [
   {
-    "question": "Based on the document and current information, what is the main topic discussed?",
+    "question": "Based on the document content, what is the main topic discussed?",
     "options": ["Option A", "Option B", "Option C", "Option D"],
     "correct": 1,
     "explanation": "Option B is correct because the document primarily focuses on this topic as evidenced by the main sections and key points discussed. The other options are either tangential topics or not covered in the document."
+  }
+]`
+            : `${topicPrompt}
+
+DIFFICULTY LEVEL: ${difficultyInstruction}
+
+QUESTION DIVERSITY & UNIQUENESS REQUIREMENTS:
+- Ensure all ${this.questionCount} questions are completely unique and cover different aspects of "${content}"
+- Avoid creating questions that test the same fact, concept, or information in different ways
+- Make sure no two questions have overlapping, similar, or related correct answers
+- Distribute questions across different subtopics, time periods, or aspects when possible
+- Vary question types appropriate to difficulty level: for Easy (factual recall, simple definitions), for Medium (application, comparison, moderate reasoning), for Hard (analysis, synthesis, evaluation)
+- Avoid repetitive question patterns, structures, or phrasings
+- Each question should focus on a distinctly different piece of information or concept
+
+${languageInstruction}IMPORTANT: Respond ONLY with a valid JSON array. No other text before or after. Each question object must have exactly these fields:
+- question: string (the question text in ${languageName})
+- options: array of exactly 4 strings (the answer choices in ${languageName})
+- correct: number (index 0-3 of the correct option)
+- explanation: string (brief explanation of why the correct answer is right and why other options are incorrect)
+
+Focus on creating questions that test knowledge of the topic content provided.
+
+Example format:
+[
+  {
+    "question": "What is a key concept in artificial intelligence?",
+    "options": ["Machine learning", "Word processing", "File compression", "Image editing"],
+    "correct": 0,
+    "explanation": "Machine learning is correct as it is a fundamental concept in artificial intelligence. The other options are general computing tasks not specific to AI."
   }
 ]`;
 
@@ -972,11 +953,11 @@ Example format:
                 'Authorization': `Bearer ${this.openaiApiKey}`
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini-search-preview',
+                model: 'gpt-4o-mini',
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are an advanced quiz generator with search capabilities. Search for the latest information when creating questions to ensure accuracy and currentness. You must respond ONLY with valid JSON arrays containing question objects. No explanations, no markdown formatting, no additional text.'
+                        content: 'You are an educational quiz generator. Create questions based strictly on the provided content. You must respond ONLY with valid JSON arrays containing question objects. No explanations, no markdown formatting, no additional text.'
                     },
                     {
                         role: 'user',
