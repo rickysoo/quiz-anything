@@ -739,8 +739,6 @@ body::before {
 }
 
 .results-list {
-    max-height: 500px;
-    overflow-y: auto;
     padding-right: 10px;
 }
 
@@ -808,6 +806,85 @@ body::before {
     margin-top: 10px;
     border-radius: 4px;
     font-style: italic;
+}
+
+.clarification-container {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.clarification-container h3 {
+    margin: 0 0 8px 0;
+    color: #2d3748;
+    font-size: 1.1em;
+}
+
+.clarification-subtitle {
+    margin: 0 0 20px 0;
+    color: #718096;
+    font-size: 0.9em;
+}
+
+.clarification-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.clarification-option {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.clarification-option:hover {
+    border-color: #4299e1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(66, 153, 225, 0.15);
+}
+
+.clarification-option.selected {
+    border-color: #4299e1;
+    background: #ebf8ff;
+}
+
+.clarification-option input[type="radio"] {
+    margin-right: 12px;
+    margin-top: 2px;
+}
+
+.clarification-option-content {
+    flex: 1;
+}
+
+.clarification-option-label {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+
+.clarification-option-description {
+    font-size: 0.85em;
+    color: #718096;
+}
+
+.clarification-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.clarification-actions button {
+    flex: 1;
 }
 
 .hidden {

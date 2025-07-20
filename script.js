@@ -1,15 +1,20 @@
 class QuizGenerator {
     constructor() {
-        this.questions = [];
-        this.currentQuestionIndex = 0;
-        this.userAnswers = [];
-        this.questionCount = 10;
-        this.difficulty = 'medium';
-        this.currentTopic = null;
-        this.currentInputType = null;
-        this.currentFileContent = null;
-        this.openaiApiKey = null;
-        this.init();
+        try {
+            console.log('QuizGenerator constructor called');
+            this.questions = [];
+            this.currentQuestionIndex = 0;
+            this.userAnswers = [];
+            this.questionCount = 10;
+            this.difficulty = 'medium';
+            this.currentTopic = null;
+            this.currentInputType = null;
+            this.currentFileContent = null;
+            this.openaiApiKey = null;
+            this.init();
+        } catch (error) {
+            console.error('Error in QuizGenerator constructor:', error);
+        }
     }
 
     async initApiKey() {
@@ -38,12 +43,30 @@ class QuizGenerator {
     }
 
     async init() {
-        await this.initApiKey();
-        this.bindEvents();
-        this.setupInputToggle();
-        this.setupQuestionCountSelector();
-        this.setupDifficultySelector();
-        this.registerServiceWorker();
+        try {
+            console.log('Initializing QuizGenerator...');
+            await this.initApiKey();
+            console.log('API key initialized');
+            
+            this.bindEvents();
+            console.log('Events bound');
+            
+            this.setupInputToggle();
+            console.log('Input toggle setup');
+            
+            this.setupQuestionCountSelector();
+            console.log('Question count selector setup');
+            
+            this.setupDifficultySelector();
+            console.log('Difficulty selector setup');
+            
+            this.registerServiceWorker();
+            console.log('Service worker registered');
+            
+            console.log('QuizGenerator initialization complete');
+        } catch (error) {
+            console.error('Error during initialization:', error);
+        }
     }
 
     showNotification(message, type = 'info') {
@@ -63,15 +86,50 @@ class QuizGenerator {
     }
 
     bindEvents() {
-        document.getElementById('generate-quiz').addEventListener('click', () => this.generateQuiz());
-        document.getElementById('next-btn').addEventListener('click', () => this.nextQuestion());
-        document.getElementById('prev-btn').addEventListener('click', () => this.prevQuestion());
-        document.getElementById('submit-quiz').addEventListener('click', () => this.submitQuiz());
-        document.getElementById('restart-quiz').addEventListener('click', () => this.restart());
-        document.getElementById('same-topic-quiz').addEventListener('click', () => this.retakeQuiz());
-        document.getElementById('file-upload').addEventListener('change', (e) => this.handleFileUpload(e));
-        document.getElementById('exit-quiz').addEventListener('click', () => this.exitQuiz());
-        document.getElementById('app-title').addEventListener('click', () => this.goHome());
+        try {
+            // Main quiz button
+            const generateBtn = document.getElementById('generate-quiz');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', () => this.generateQuiz());
+            } else {
+                console.error('Generate quiz button not found!');
+            }
+            
+            // Navigation buttons
+            const nextBtn = document.getElementById('next-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            const submitBtn = document.getElementById('submit-quiz');
+            const exitBtn = document.getElementById('exit-quiz');
+            
+            if (nextBtn) nextBtn.addEventListener('click', () => this.nextQuestion());
+            if (prevBtn) prevBtn.addEventListener('click', () => this.prevQuestion());
+            if (submitBtn) submitBtn.addEventListener('click', () => this.submitQuiz());
+            if (exitBtn) exitBtn.addEventListener('click', () => this.exitQuiz());
+            
+            // Results buttons
+            const restartBtn = document.getElementById('restart-quiz');
+            const sameTopicBtn = document.getElementById('same-topic-quiz');
+            if (restartBtn) restartBtn.addEventListener('click', () => this.restart());
+            if (sameTopicBtn) sameTopicBtn.addEventListener('click', () => this.retakeQuiz());
+            
+            // File upload
+            const fileUpload = document.getElementById('file-upload');
+            if (fileUpload) fileUpload.addEventListener('change', (e) => this.handleFileUpload(e));
+            
+            // App title
+            const appTitle = document.getElementById('app-title');
+            if (appTitle) appTitle.addEventListener('click', () => this.goHome());
+            
+            // Clarification dialog events
+            const backBtn = document.getElementById('back-to-topic');
+            const confirmBtn = document.getElementById('confirm-clarification');
+            if (backBtn) backBtn.addEventListener('click', () => this.hideClarificationDialog());
+            if (confirmBtn) confirmBtn.addEventListener('click', () => this.handleClarificationConfirm());
+            
+            console.log('All event listeners bound successfully');
+        } catch (error) {
+            console.error('Error binding events:', error);
+        }
     }
 
     setupInputToggle() {
@@ -102,11 +160,14 @@ class QuizGenerator {
                 button.classList.add('active');
                 // Update question count
                 this.questionCount = parseInt(button.dataset.count);
-                // Update button text
-                document.querySelector('.btn-text').textContent = `Start the Quiz`;
-                document.querySelector('.btn-subtitle').textContent = `${this.questionCount} questions`;
-                // Update total questions display
-                document.getElementById('total-questions').textContent = this.questionCount;
+                // Update button text with null checks
+                const btnText = document.querySelector('.btn-text');
+                const btnSubtitle = document.querySelector('.btn-subtitle');
+                const totalQuestions = document.getElementById('total-questions');
+                
+                if (btnText) btnText.textContent = `Start the Quiz`;
+                if (btnSubtitle) btnSubtitle.textContent = `${this.questionCount} questions`;
+                if (totalQuestions) totalQuestions.textContent = this.questionCount;
             });
         });
     }
@@ -137,7 +198,8 @@ class QuizGenerator {
     }
 
     detectLanguage(content) {
-        // Simple language detection based on common words/patterns
+        
+        // Standard content-based language detection
         const languagePatterns = {
             'es': /\b(el|la|los|las|de|en|un|una|con|por|para|que|se|es|son|está|están|tiene|tienen|muy|más|pero|como|cuando|donde|porque|si|no|sí|también|hasta|desde)\b/gi,
             'fr': /\b(le|la|les|de|du|des|un|une|et|ou|est|sont|avec|pour|dans|sur|par|ce|cette|ces|que|qui|se|ne|pas|très|plus|mais|comme|quand|où|parce|si|oui|non|aussi|jusqu|depuis)\b/gi,
@@ -147,7 +209,9 @@ class QuizGenerator {
             'ru': /\b(в|на|и|с|по|для|от|до|за|при|над|под|из|к|о|об|про|через|между|что|как|когда|где|почему|если|да|нет|также|уже|еще)\b/gi,
             'zh': /[\u4e00-\u9fff]/g,
             'ja': /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff]/g,
-            'ar': /[\u0600-\u06ff]/g
+            'ar': /[\u0600-\u06ff]/g,
+            'nl': /\b(de|het|een|van|in|op|met|voor|door|naar|over|onder|tussen|dat|die|dit|deze|en|of|is|zijn|heeft|hebben|zeer|meer|maar|als|wanneer|waar|omdat|ja|nee|ook|tot|sinds)\b/gi,
+            'ko': /[\uac00-\ud7af\u1100-\u11ff\u3130-\u318f]/g
         };
 
         let maxMatches = 0;
@@ -254,6 +318,133 @@ class QuizGenerator {
                 reject(new Error(`Error processing ${fileName}: ${error.message}`));
             }
         });
+    }
+
+    detectTopicAmbiguity(content) {
+        const cleanContent = content.toLowerCase().trim();
+        
+        // Pattern-based ambiguity detection for broader coverage
+        const ambiguityPatterns = [
+            // Programming languages and technologies
+            {
+                pattern: /^(python|javascript|java|c\+\+|c#|ruby|php|go|rust|swift|kotlin|typescript|html|css|sql|react|angular|vue|node\.?js|express|django|flask|spring|laravel)$/i,
+                createOptions: (topic) => [
+                    { type: 'knowledge', label: `Knowledge about ${topic} (history, features, facts)`, description: `Learn about the ${topic} technology, its history, and characteristics` },
+                    { type: 'skills', label: `${topic} programming/technical skills`, description: `Test practical coding abilities and technical implementation in ${topic}` }
+                ]
+            },
+            // Human languages (supports many languages including non-Latin scripts)
+            {
+                pattern: /^(english|french|spanish|german|italian|portuguese|russian|chinese|japanese|korean|arabic|hindi|dutch|swedish|norwegian|danish|finnish|greek|turkish|hebrew|thai|vietnamese|indonesian|malay|filipino|tagalog|français|español|deutsch|italiano|português|русский|中文|日本語|한국어|العربية|हिन्दी|ελληνικά|türkçe|עברית|ไทย|tiếng việt|bahasa indonesia|bahasa melayu)$/i,
+                createOptions: (topic) => [
+                    { type: 'knowledge', label: `Knowledge about ${topic} (culture, history, countries)`, description: `Learn about the culture, history, and countries where ${topic} is spoken` },
+                    { type: 'skills', label: `${topic} language skills (grammar, vocabulary, comprehension)`, description: `Test practical language abilities and fluency in ${topic}` }
+                ]
+            },
+            // Countries and regions
+            {
+                pattern: /^(china|japan|korea|france|germany|spain|italy|russia|brazil|mexico|india|canada|australia|england|britain|uk|usa|america|中国|日本|韩国|한국|フランス|ドイツ|スペイン|イタリア|ロシア|ブラジル|メキシコ|インド|カナダ|オーストラリア|イギリス|アメリカ)$/i,
+                createOptions: (topic) => [
+                    { type: 'knowledge', label: `General knowledge about ${topic}`, description: `Test knowledge about geography, politics, current events, and general facts` },
+                    { type: 'culture', label: `${topic} culture and history`, description: `Focus on cultural traditions, historical events, and social aspects` },
+                    { type: 'language', label: `${topic} language proficiency`, description: `Test language skills if you want to practice the local language` }
+                ]
+            },
+            // Academic subjects that could be theoretical or practical
+            {
+                pattern: /^(mathematics|math|physics|chemistry|biology|economics|psychology|philosophy|statistics|calculus|algebra|geometry|organic chemistry|biochemistry|molecular biology|microeconomics|macroeconomics|cognitive psychology|social psychology|logic|ethics|data science|machine learning|artificial intelligence|ai|ml)$/i,
+                createOptions: (topic) => [
+                    { type: 'theory', label: `${topic} theory and concepts`, description: `Test theoretical knowledge, definitions, and conceptual understanding` },
+                    { type: 'application', label: `${topic} practical application`, description: `Focus on problem-solving, real-world applications, and hands-on skills` }
+                ]
+            },
+            // Business and professional topics
+            {
+                pattern: /^(marketing|finance|accounting|management|business|economics|law|medicine|engineering|design|architecture|project management|digital marketing|financial planning|corporate law|medical practice|software engineering|graphic design)$/i,
+                createOptions: (topic) => [
+                    { type: 'theory', label: `${topic} theory and principles`, description: `Test theoretical knowledge and fundamental concepts` },
+                    { type: 'practice', label: `${topic} practical skills`, description: `Focus on real-world application and professional practice` }
+                ]
+            },
+            // Arts and creative fields
+            {
+                pattern: /^(music|art|painting|drawing|photography|writing|literature|poetry|dance|theater|film|cinema|sculpture|design)$/i,
+                createOptions: (topic) => [
+                    { type: 'history', label: `${topic} history and theory`, description: `Learn about the history, movements, and theoretical aspects` },
+                    { type: 'technique', label: `${topic} techniques and practice`, description: `Focus on practical skills, methods, and creative techniques` }
+                ]
+            },
+            // Sports and activities
+            {
+                pattern: /^(football|soccer|basketball|tennis|baseball|golf|swimming|running|cycling|yoga|fitness|boxing|martial arts|chess|poker)$/i,
+                createOptions: (topic) => [
+                    { type: 'knowledge', label: `${topic} rules and history`, description: `Test knowledge about rules, history, famous players/events` },
+                    { type: 'technique', label: `${topic} techniques and strategy`, description: `Focus on practical skills, techniques, and strategic knowledge` }
+                ]
+            }
+        ];
+        
+        // Check each pattern to see if it matches
+        for (const ambiguityPattern of ambiguityPatterns) {
+            const match = cleanContent.match(ambiguityPattern.pattern);
+            if (match) {
+                const topic = match[1]; // Get the captured topic name
+                return ambiguityPattern.createOptions(topic);
+            }
+        }
+        
+        // Generic fallback for any single-word topic that might be ambiguous
+        if (cleanContent.split(' ').length === 1 && cleanContent.length > 2) {
+            return [
+                { type: 'general', label: `General knowledge about ${cleanContent}`, description: `Test broad factual knowledge and current information` },
+                { type: 'deep', label: `In-depth ${cleanContent} expertise`, description: `Focus on detailed, specialized knowledge for experts` },
+                { type: 'practical', label: `Practical ${cleanContent} skills`, description: `Test hands-on abilities and real-world application` }
+            ];
+        }
+        
+        return null; // No ambiguity detected
+    }
+
+    detectDocumentAmbiguity(content) {
+        // For documents, analyze content to suggest different quiz approaches
+        const contentLength = content.length;
+        const hasCodeSnippets = /```|function\s+\w+|class\s+\w+|import\s+|from\s+\w+|<\w+>|{[\s\S]*}/.test(content);
+        const hasFormulas = /\$.*\$|\\[a-zA-Z]+|∫|∑|√|≤|≥|∞|α|β|γ|δ|θ|λ|μ|π|σ|φ|ψ|ω/.test(content);
+        const hasBusinessTerms = /revenue|profit|budget|strategy|management|marketing|sales|customer|client|stakeholder|ROI|KPI|B2B|B2C/.test(content.toLowerCase());
+        const hasScientificTerms = /hypothesis|experiment|data|analysis|research|study|methodology|results|conclusion|correlation|variable/.test(content.toLowerCase());
+        
+        // Only show clarification for longer documents that could benefit from different approaches
+        if (contentLength > 500) {
+            const options = [
+                { type: 'general', label: 'General comprehension quiz', description: 'Test overall understanding of the main concepts and facts' }
+            ];
+            
+            if (hasCodeSnippets) {
+                options.push({ type: 'code', label: 'Code-focused quiz', description: 'Focus on programming concepts, syntax, and technical implementation' });
+            }
+            
+            if (hasFormulas) {
+                options.push({ type: 'technical', label: 'Technical/mathematical quiz', description: 'Focus on formulas, calculations, and technical concepts' });
+            }
+            
+            if (hasBusinessTerms) {
+                options.push({ type: 'business', label: 'Business application quiz', description: 'Focus on practical business applications and strategic thinking' });
+            }
+            
+            if (hasScientificTerms) {
+                options.push({ type: 'analytical', label: 'Research and analysis quiz', description: 'Focus on methodology, data interpretation, and critical thinking' });
+            }
+            
+            // Add detailed vs. broad option for any substantial document
+            options.push({ type: 'detailed', label: 'Detailed knowledge quiz', description: 'Test specific details, facts, and precise information from the document' });
+            
+            // Only show clarification if we have multiple meaningful options
+            if (options.length > 2) {
+                return options;
+            }
+        }
+        
+        return null;
     }
 
     async validateContent(content, inputType) {
@@ -384,6 +575,14 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
     }
 
     calculateMeaningfulWordRatio(content) {
+        // For non-Latin scripts (Chinese, Arabic, etc.), treat the entire content as meaningful
+        // if it contains Unicode characters from major writing systems
+        const hasUnicodeText = /[\u4e00-\u9fff\u3400-\u4dbf\u0600-\u06ff\u0750-\u077f\uac00-\ud7af\u3040-\u309f\u30a0-\u30ff]/.test(content);
+        if (hasUnicodeText) {
+            // Content contains Chinese, Arabic, Korean, or Japanese characters - treat as meaningful
+            return 1.0;
+        }
+        
         const words = content.split(/\s+/).filter(word => word.length > 0);
         if (words.length === 0) return 0;
 
@@ -393,19 +592,22 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
                 return true;
             }
             
-            // Remove punctuation and check if word contains mostly letters
+            // Remove punctuation and check if word contains mostly letters or Unicode characters
             const cleanWord = word.replace(/[^\w]/g, '');
-            const letterCount = (cleanWord.match(/[a-zA-Z]/g) || []).length;
+            const latinLetterCount = (cleanWord.match(/[a-zA-Z]/g) || []).length;
             const numberCount = (cleanWord.match(/[0-9]/g) || []).length;
+            const unicodeCharCount = (cleanWord.match(/[\u0080-\uffff]/g) || []).length;
             
-            // Allow words with letters, numbers, or mixed (for technical terms)
+            // Allow words with letters, numbers, Unicode characters, or mixed
             if (cleanWord.length > 1) {
-                // Pure letters (traditional words)
-                if (letterCount / cleanWord.length > 0.6) return true;
+                // Pure Latin letters (traditional English words)
+                if (latinLetterCount / cleanWord.length > 0.6) return true;
                 // Mixed alphanumeric (technical terms, version numbers, etc.)
-                if ((letterCount + numberCount) / cleanWord.length > 0.8) return true;
+                if ((latinLetterCount + numberCount) / cleanWord.length > 0.8) return true;
                 // Pure numbers (years, quantities, etc.) if reasonably sized
                 if (numberCount === cleanWord.length && cleanWord.length >= 2 && cleanWord.length <= 6) return true;
+                // Unicode characters (non-Latin scripts)
+                if (unicodeCharCount > 0) return true;
             }
             
             return false;
@@ -424,6 +626,13 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
                 this.showNotification('Please tell us what you\'d like to be quizzed on', 'warning');
                 return;
             }
+            
+            // Check for topic ambiguity only for topic input
+            const ambiguityOptions = this.detectTopicAmbiguity(content);
+            if (ambiguityOptions) {
+                this.showClarificationDialog(content, ambiguityOptions);
+                return;
+            }
         } else {
             const fileInput = document.getElementById('file-upload');
             if (!fileInput.files[0]) {
@@ -431,11 +640,74 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
                 return;
             }
             content = await this.readFile(fileInput.files[0]);
+            
+            // Check for document ambiguity
+            const ambiguityOptions = this.detectDocumentAmbiguity(content);
+            if (ambiguityOptions) {
+                this.showClarificationDialog('Document Content', ambiguityOptions);
+                return;
+            }
         }
 
+        // Continue with quiz generation
+        this.proceedWithQuizGeneration(content, inputType);
+    }
+
+    showClarificationDialog(topic, options) {
+        // Hide input section and show clarification
+        document.getElementById('topic-input').classList.add('hidden');
+        document.getElementById('generate-quiz').classList.add('hidden');
+        document.getElementById('topic-clarification').classList.remove('hidden');
+        
+        // Populate clarification options
+        const optionsContainer = document.getElementById('clarification-options');
+        optionsContainer.innerHTML = options.map((option, index) => `
+            <label class="clarification-option">
+                <input type="radio" name="clarificationType" value="${option.type}" data-topic="${topic}">
+                <div class="clarification-option-content">
+                    <div class="clarification-option-label">${option.label}</div>
+                    <div class="clarification-option-description">${option.description}</div>
+                </div>
+            </label>
+        `).join('');
+        
+        // Add event listeners for newly created radio buttons
+        document.querySelectorAll('input[name="clarificationType"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                // Update visual selection
+                document.querySelectorAll('.clarification-option').forEach(option => {
+                    option.classList.remove('selected');
+                });
+                radio.closest('.clarification-option').classList.add('selected');
+                
+                // Enable continue button
+                document.getElementById('confirm-clarification').disabled = false;
+            });
+        });
+    }
+
+    handleClarificationConfirm() {
+        const selectedOption = document.querySelector('input[name="clarificationType"]:checked');
+        if (selectedOption) {
+            const topic = selectedOption.dataset.topic;
+            const type = selectedOption.value;
+            this.hideClarificationDialog();
+            this.proceedWithQuizGeneration(topic, 'topic', type);
+        }
+    }
+
+    hideClarificationDialog() {
+        document.getElementById('topic-clarification').classList.add('hidden');
+        document.getElementById('topic-input').classList.remove('hidden');
+        document.getElementById('generate-quiz').classList.remove('hidden');
+        document.getElementById('confirm-clarification').disabled = true;
+    }
+
+    async proceedWithQuizGeneration(content, inputType, clarificationType = null) {
         // Store current quiz parameters for retaking
         this.currentTopic = content;
         this.currentInputType = inputType;
+        this.currentClarificationType = clarificationType;
 
         const generateBtn = document.getElementById('generate-quiz');
         generateBtn.disabled = true;
@@ -457,7 +729,7 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
             generateBtn.textContent = 'Creating your quiz...';
             // Detect language of content
             const detectedLanguage = this.detectLanguage(content);
-            this.questions = await this.generateMCQsWithOpenAI(content, inputType, detectedLanguage, this.difficulty);
+            this.questions = await this.generateMCQsWithOpenAI(content, inputType, detectedLanguage, this.difficulty, clarificationType);
             this.userAnswers = new Array(this.questionCount).fill(null);
             this.currentQuestionIndex = 0;
             
@@ -482,7 +754,7 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
         }
     }
 
-    async generateMCQsWithOpenAI(content, inputType, language = 'en', difficulty = 'medium') {
+    async generateMCQsWithOpenAI(content, inputType, language = 'en', difficulty = 'medium', clarificationType = null) {
         const languageNames = {
             'en': 'English',
             'es': 'Spanish',
@@ -493,16 +765,18 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
             'ru': 'Russian',
             'zh': 'Chinese',
             'ja': 'Japanese',
-            'ar': 'Arabic'
+            'ar': 'Arabic',
+            'nl': 'Dutch',
+            'ko': 'Korean'
         };
 
         const languageName = languageNames[language] || 'English';
         const languageInstruction = language === 'en' ? '' : `Generate all questions and answers in ${languageName}. `;
 
         const difficultyDescriptions = {
-            'easy': 'Easy difficulty: Introductory knowledge question on the topic to test understanding. Focus on basic concepts, definitions, and straightforward facts.',
-            'medium': 'Medium difficulty: Tougher questions on the topic to test application. Include practical scenarios and moderate analysis.',
-            'hard': 'Hard difficulty: Hardest questions such as case study and latest developments. Create challenging questions requiring deep analysis, complex reasoning, and advanced application.'
+            'easy': 'Easy difficulty: Generate BASIC introductory questions suitable for beginners. Focus ONLY on: simple definitions, basic facts, fundamental concepts, who/what/when questions. Avoid analysis, application, or complex reasoning. Use simple vocabulary and straightforward questions.',
+            'medium': 'Medium difficulty: Generate questions that require APPLICATION and moderate analysis. Focus on: practical scenarios, how/why questions, comparing concepts, problem-solving, cause-and-effect relationships. Require some thinking beyond basic recall.',
+            'hard': 'Hard difficulty: Generate ADVANCED questions requiring EXPERT knowledge. Focus on: complex case studies, multi-step reasoning, synthesis of multiple concepts, evaluation and critique, latest cutting-edge developments, expert-level analysis, hypothetical scenarios requiring deep understanding.'
         };
 
         const difficultyInstruction = difficultyDescriptions[difficulty] || difficultyDescriptions['medium'];
@@ -510,14 +784,122 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
         const currentYear = new Date().getFullYear();
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-        const prompt = inputType === 'topic' 
-            ? `Search for the latest information about "${content}" and generate exactly ${this.questionCount} multiple choice questions based on current, up-to-date information as of ${currentDate}. 
+        // Generate appropriate prompt based on clarification type
+        let topicPrompt = '';
+        if (clarificationType === 'skills') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions to test PRACTICAL SKILLS in "${content}". 
 
-SEARCH INSTRUCTIONS:
+SKILL-BASED FOCUS:
+- For programming languages: Test syntax, code reading/writing, debugging, problem-solving, algorithm implementation
+- For human languages: Test grammar, vocabulary, comprehension, proper usage, sentence structure
+- Show actual code snippets, sentences, or practical examples
+- Focus on what users can DO with the knowledge, not facts ABOUT the subject
+- Include questions about functionality, output, errors, best practices, and real-world application
+- Avoid historical facts, creator information, or theoretical background`;
+        } else if (clarificationType === 'theory' || clarificationType === 'knowledge') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions about THEORETICAL KNOWLEDGE and CONCEPTS in "${content}".
+
+THEORY-FOCUSED APPROACH:
+- Focus on fundamental principles, definitions, and conceptual understanding
+- Test knowledge of theories, models, frameworks, and academic concepts
+- Include questions about historical development, key figures, and foundational ideas
+- Emphasize understanding of why things work the way they do
+- Cover theoretical frameworks and academic perspectives`;
+        } else if (clarificationType === 'application' || clarificationType === 'practice' || clarificationType === 'practical') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions about PRACTICAL APPLICATION in "${content}".
+
+APPLICATION-FOCUSED APPROACH:
+- Focus on real-world scenarios and practical problem-solving
+- Test ability to apply concepts to actual situations
+- Include case studies, examples, and hands-on applications
+- Emphasize practical skills and implementation
+- Cover best practices and real-world challenges`;
+        } else if (clarificationType === 'culture') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions about CULTURE AND SOCIETY in "${content}".
+
+CULTURAL FOCUS:
+- Focus on traditions, customs, social practices, and cultural norms
+- Test knowledge of art, music, literature, food, and celebrations
+- Include questions about social structure, values, and beliefs
+- Cover cultural history and contemporary cultural trends
+- Emphasize cultural diversity and unique characteristics`;
+        } else if (clarificationType === 'language') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions to test LANGUAGE PROFICIENCY related to "${content}".
+
+LANGUAGE PROFICIENCY FOCUS:
+- Test grammar, vocabulary, sentence structure, and comprehension
+- Include questions in the target language when appropriate
+- Focus on practical communication skills
+- Test understanding of language rules and proper usage
+- Avoid cultural or historical questions about the language`;
+        } else if (clarificationType === 'technique') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions about TECHNIQUES AND METHODS in "${content}".
+
+TECHNIQUE-FOCUSED APPROACH:
+- Focus on specific methods, strategies, and technical approaches
+- Test knowledge of how to perform specific actions or procedures
+- Include questions about best practices and optimal techniques
+- Cover step-by-step processes and methodologies
+- Emphasize practical implementation of techniques`;
+        } else if (clarificationType === 'deep' || clarificationType === 'detailed') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions requiring DEEP, EXPERT-LEVEL knowledge about "${content}".
+
+EXPERT-LEVEL FOCUS:
+- Focus on advanced, specialized knowledge and intricate details
+- Test understanding of complex relationships and nuanced concepts
+- Include questions that require synthesis of multiple ideas
+- Cover cutting-edge developments and latest research
+- Emphasize depth over breadth of knowledge`;
+        } else if (clarificationType === 'code') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions focusing on CODE AND PROGRAMMING CONCEPTS from the document.
+
+CODE-FOCUSED APPROACH:
+- Focus on programming concepts, syntax, and technical implementation
+- Test understanding of code structure, logic, and functionality
+- Include questions about debugging, optimization, and best practices
+- Cover programming patterns and technical architecture
+- Emphasize code analysis and problem-solving skills`;
+        } else if (clarificationType === 'technical') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions focusing on TECHNICAL AND MATHEMATICAL CONCEPTS from the document.
+
+TECHNICAL FOCUS:
+- Focus on formulas, calculations, and technical specifications
+- Test understanding of mathematical relationships and technical principles
+- Include questions about problem-solving and analytical thinking
+- Cover technical methodologies and systematic approaches
+- Emphasize precision and technical accuracy`;
+        } else if (clarificationType === 'business') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions focusing on BUSINESS APPLICATIONS AND STRATEGY from the document.
+
+BUSINESS-FOCUSED APPROACH:
+- Focus on practical business applications and strategic thinking
+- Test understanding of business implications and commercial value
+- Include questions about implementation, ROI, and business outcomes
+- Cover management decisions and strategic considerations
+- Emphasize real-world business scenarios`;
+        } else if (clarificationType === 'analytical') {
+            topicPrompt = `Generate exactly ${this.questionCount} multiple choice questions focusing on RESEARCH METHODOLOGY AND ANALYSIS from the document.
+
+ANALYTICAL FOCUS:
+- Focus on research methods, data interpretation, and critical thinking
+- Test understanding of analytical frameworks and evaluation criteria
+- Include questions about hypothesis testing and evidence analysis
+- Cover methodology validation and research design
+- Emphasize critical evaluation and analytical reasoning`;
+        } else {
+            // Default general approach
+            topicPrompt = `Search for the latest information about "${content}" and generate exactly ${this.questionCount} multiple choice questions based on current, up-to-date information as of ${currentDate}. 
+
+GENERAL KNOWLEDGE FOCUS:
 - Look up recent developments, current statistics, latest research, and up-to-date facts about "${content}"
 - Include questions about recent events, current leaders, latest discoveries, or recent changes in this field
+- Test factual knowledge, historical information, features, and characteristics
 - Ensure all factual information is accurate as of ${currentYear}
-- Prioritize information from the last 2-3 years when relevant
+- Prioritize information from the last 2-3 years when relevant`;
+        }
+
+        const prompt = inputType === 'topic' 
+            ? `${topicPrompt}
 
 DIFFICULTY LEVEL: ${difficultyInstruction}
 
@@ -526,7 +908,7 @@ QUESTION DIVERSITY & UNIQUENESS REQUIREMENTS:
 - Avoid creating questions that test the same fact, concept, or information in different ways
 - Make sure no two questions have overlapping, similar, or related correct answers
 - Distribute questions across different subtopics, time periods, or aspects when possible
-- Vary question types: include factual recall, conceptual understanding, application, comparison, and analysis questions
+- Vary question types appropriate to difficulty level: for Easy (factual recall, simple definitions), for Medium (application, comparison, moderate reasoning), for Hard (analysis, synthesis, evaluation)
 - Avoid repetitive question patterns, structures, or phrasings
 - Each question should focus on a distinctly different piece of information or concept
 
@@ -912,25 +1294,33 @@ Example format:
         this.generatePerformanceReport(correctAnswers, results, percentage);
         
         const detailedResults = document.getElementById('detailed-results');
-        detailedResults.innerHTML = `
-            <h4>Detailed Results</h4>
-            <div class="results-list">
-                ${results.map(result => `
-                    <div class="result-item ${result.isCorrect ? 'correct' : 'incorrect'}">
-                        <div class="result-header">
-                            <span class="question-number">Q${result.questionNumber}</span>
-                            <span class="result-status">${result.isCorrect ? '✓' : '✗'}</span>
+        
+        // Hide detailed results if running in iframe
+        const isInIframe = window.self !== window.top;
+        if (isInIframe) {
+            detailedResults.classList.add('hidden');
+        } else {
+            detailedResults.classList.remove('hidden');
+            detailedResults.innerHTML = `
+                <h4>Detailed Results</h4>
+                <div class="results-list">
+                    ${results.map(result => `
+                        <div class="result-item ${result.isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="result-header">
+                                <span class="question-number">Q${result.questionNumber}</span>
+                                <span class="result-status">${result.isCorrect ? '✓' : '✗'}</span>
+                            </div>
+                            <div class="result-details">
+                                <p><strong>Question:</strong> ${result.question}</p>
+                                <p><strong>Your Answer:</strong> ${result.userAnswer}</p>
+                                ${!result.isCorrect ? `<p><strong>Correct Answer:</strong> ${result.correctAnswer}</p>` : ''}
+                                ${result.explanation ? `<p class="explanation"><strong>Explanation:</strong> ${result.explanation}</p>` : ''}
+                            </div>
                         </div>
-                        <div class="result-details">
-                            <p><strong>Question:</strong> ${result.question}</p>
-                            <p><strong>Your Answer:</strong> ${result.userAnswer}</p>
-                            ${!result.isCorrect ? `<p><strong>Correct Answer:</strong> ${result.correctAnswer}</p>` : ''}
-                            ${result.explanation ? `<p class="explanation"><strong>Explanation:</strong> ${result.explanation}</p>` : ''}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
+                    `).join('')}
+                </div>
+            `;
+        }
     }
 
     generatePerformanceReport(correctAnswers, results, percentage) {
@@ -1094,49 +1484,29 @@ Example format:
             return;
         }
 
-        // Reset quiz state
+        // Reset quiz state and return to home with topic filled
         this.questions = [];
         this.currentQuestionIndex = 0;
         this.userAnswers = [];
-
-        // Hide results and show quiz section
+        
+        // Show home screen sections
+        document.getElementById('input-section').classList.remove('hidden');
+        document.getElementById('quiz-section').classList.add('hidden');
         document.getElementById('results-section').classList.add('hidden');
         
-        const generateBtn = document.getElementById('generate-quiz');
-        generateBtn.disabled = true;
-        generateBtn.textContent = 'Creating new quiz...';
-
-        try {
-            if (!this.openaiApiKey) {
-                this.showNotification('Please enter your OpenAI API key to continue.', 'error');
-                return;
-            }
-            
-            // Detect language of content
-            const detectedLanguage = this.detectLanguage(this.currentTopic);
-            this.questions = await this.generateMCQsWithOpenAI(this.currentTopic, this.currentInputType, detectedLanguage, this.difficulty);
-            this.userAnswers = new Array(this.questionCount).fill(null);
-            this.currentQuestionIndex = 0;
-            
-            // Show success notification
-            if (this.currentInputType === 'topic') {
-                this.showNotification(`🎉 New quiz ready! ${this.questionCount} fresh questions on the same topic.`, 'success');
-            } else {
-                this.showNotification(`🎉 New quiz created from your document! ${this.questionCount} fresh questions.`, 'success');
-            }
-            
-            this.showQuizSection();
-            this.displayCurrentQuestion();
-        } catch (error) {
-            this.showNotification('Sorry, there was a problem creating your new quiz. Please try again.', 'error');
-        } finally {
-            generateBtn.disabled = false;
-            generateBtn.innerHTML = `
-                <span class="btn-icon">🚀</span>
-                <span class="btn-text">Start the Quiz</span>
-                <span class="btn-subtitle">${this.questionCount} questions</span>
-            `;
+        // Pre-fill the topic field
+        if (this.currentInputType === 'topic') {
+            document.getElementById('topic-text').value = this.currentTopic;
+            document.getElementById('file-upload').value = '';
+            document.getElementById('file-content').classList.add('hidden');
+        } else {
+            // For file uploads, show the file content again
+            document.getElementById('topic-text').value = '';
+            document.getElementById('file-content').classList.remove('hidden');
+            document.getElementById('file-content').textContent = this.currentTopic.substring(0, 500) + '...';
         }
+        
+        this.showNotification('Choose difficulty level for the same topic', 'info');
     }
 }
 
