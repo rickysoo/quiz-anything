@@ -500,9 +500,9 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
         const languageInstruction = language === 'en' ? '' : `Generate all questions and answers in ${languageName}. `;
 
         const difficultyDescriptions = {
-            'easy': 'Easy difficulty: Focus on basic concepts, definitions, and straightforward facts. Use simple question structures and avoid complex reasoning.',
-            'medium': 'Medium difficulty: Include moderate analysis, some application of concepts, and questions requiring basic reasoning or connections.',
-            'hard': 'Hard difficulty: Create challenging questions requiring deep analysis, complex reasoning, synthesis of multiple concepts, or advanced application of knowledge.'
+            'easy': 'Easy difficulty: Introductory knowledge question on the topic to test understanding. Focus on basic concepts, definitions, and straightforward facts.',
+            'medium': 'Medium difficulty: Tougher questions on the topic to test application. Include practical scenarios and moderate analysis.',
+            'hard': 'Hard difficulty: Hardest questions such as case study and latest developments. Create challenging questions requiring deep analysis, complex reasoning, and advanced application.'
         };
 
         const difficultyInstruction = difficultyDescriptions[difficulty] || difficultyDescriptions['medium'];
