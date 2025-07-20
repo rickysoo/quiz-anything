@@ -236,13 +236,15 @@ body::before {
     font-size: 1.1em;
 }
 
-.question-count-selector {
+.question-count-selector,
+.difficulty-selector {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
 }
 
-.count-btn {
+.count-btn,
+.difficulty-btn {
     padding: 12px 20px;
     border: 2px solid var(--border-color);
     background: white;
@@ -255,13 +257,15 @@ body::before {
     min-width: 60px;
 }
 
-.count-btn:hover {
+.count-btn:hover,
+.difficulty-btn:hover {
     border-color: var(--primary-color);
     transform: translateY(-2px);
     box-shadow: var(--shadow-colorful);
 }
 
-.count-btn.active {
+.count-btn.active,
+.difficulty-btn.active {
     background: var(--primary-gradient);
     color: white;
     border-color: var(--primary-color);
@@ -565,6 +569,13 @@ body::before {
     top: 8px;
 }
 
+.results-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
 .btn-primary, .btn-secondary {
     padding: 12px 30px;
     border: none;
@@ -829,5 +840,15 @@ body::before {
     
     .option {
         padding: 12px;
+    }
+    
+    .difficulty-selector,
+    .question-count-selector {
+        justify-content: center;
+    }
+    
+    .results-actions {
+        flex-direction: column;
+        gap: 10px;
     }
 }

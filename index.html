@@ -48,6 +48,14 @@
                         <button type="button" class="count-btn" data-count="20">20</button>
                     </div>
                 </div>
+                <div class="setting-group">
+                    <label class="setting-label">🎚️ Difficulty level</label>
+                    <div class="difficulty-selector">
+                        <button type="button" class="difficulty-btn" data-difficulty="easy">🟢 Easy</button>
+                        <button type="button" class="difficulty-btn active" data-difficulty="medium">🟡 Medium</button>
+                        <button type="button" class="difficulty-btn" data-difficulty="hard">🔴 Hard</button>
+                    </div>
+                </div>
             </div>
             
             <div class="input-method">
@@ -104,7 +112,10 @@
             <div id="score-display"></div>
             <div id="performance-report"></div>
             <div id="detailed-results"></div>
-            <button id="restart-quiz" class="btn-primary">Try Another Quiz</button>
+            <div class="results-actions">
+                <button id="restart-quiz" class="btn-primary">Try Another Quiz</button>
+                <button id="same-topic-quiz" class="btn-secondary hidden">Quiz Same Topic Again</button>
+            </div>
         </div>
     </div>
     

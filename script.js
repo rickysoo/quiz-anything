@@ -4,6 +4,10 @@ class QuizGenerator {
         this.currentQuestionIndex = 0;
         this.userAnswers = [];
         this.questionCount = 10;
+        this.difficulty = 'medium';
+        this.currentTopic = null;
+        this.currentInputType = null;
+        this.currentFileContent = null;
         this.openaiApiKey = null;
         this.init();
     }
@@ -38,6 +42,7 @@ class QuizGenerator {
         this.bindEvents();
         this.setupInputToggle();
         this.setupQuestionCountSelector();
+        this.setupDifficultySelector();
         this.registerServiceWorker();
     }
 
@@ -63,6 +68,7 @@ class QuizGenerator {
         document.getElementById('prev-btn').addEventListener('click', () => this.prevQuestion());
         document.getElementById('submit-quiz').addEventListener('click', () => this.submitQuiz());
         document.getElementById('restart-quiz').addEventListener('click', () => this.restart());
+        document.getElementById('same-topic-quiz').addEventListener('click', () => this.retakeQuiz());
         document.getElementById('file-upload').addEventListener('change', (e) => this.handleFileUpload(e));
         document.getElementById('exit-quiz').addEventListener('click', () => this.exitQuiz());
         document.getElementById('app-title').addEventListener('click', () => this.goHome());
@@ -101,6 +107,20 @@ class QuizGenerator {
                 document.querySelector('.btn-subtitle').textContent = `${this.questionCount} questions`;
                 // Update total questions display
                 document.getElementById('total-questions').textContent = this.questionCount;
+            });
+        });
+    }
+
+    setupDifficultySelector() {
+        const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+        difficultyButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons
+                difficultyButtons.forEach(btn => btn.classList.remove('active'));
+                // Add active class to clicked button
+                button.classList.add('active');
+                // Update difficulty
+                this.difficulty = button.dataset.difficulty;
             });
         });
     }
@@ -413,6 +433,10 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
             content = await this.readFile(fileInput.files[0]);
         }
 
+        // Store current quiz parameters for retaking
+        this.currentTopic = content;
+        this.currentInputType = inputType;
+
         const generateBtn = document.getElementById('generate-quiz');
         generateBtn.disabled = true;
         generateBtn.textContent = 'Checking your topic...';
@@ -433,7 +457,7 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
             generateBtn.textContent = 'Creating your quiz...';
             // Detect language of content
             const detectedLanguage = this.detectLanguage(content);
-            this.questions = await this.generateMCQsWithOpenAI(content, inputType, detectedLanguage);
+            this.questions = await this.generateMCQsWithOpenAI(content, inputType, detectedLanguage, this.difficulty);
             this.userAnswers = new Array(this.questionCount).fill(null);
             this.currentQuestionIndex = 0;
             
@@ -458,7 +482,7 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
         }
     }
 
-    async generateMCQsWithOpenAI(content, inputType, language = 'en') {
+    async generateMCQsWithOpenAI(content, inputType, language = 'en', difficulty = 'medium') {
         const languageNames = {
             'en': 'English',
             'es': 'Spanish',
@@ -475,6 +499,14 @@ IMPORTANT: Be accepting of technical terms, acronyms, and specialized vocabulary
         const languageName = languageNames[language] || 'English';
         const languageInstruction = language === 'en' ? '' : `Generate all questions and answers in ${languageName}. `;
 
+        const difficultyDescriptions = {
+            'easy': 'Easy difficulty: Focus on basic concepts, definitions, and straightforward facts. Use simple question structures and avoid complex reasoning.',
+            'medium': 'Medium difficulty: Include moderate analysis, some application of concepts, and questions requiring basic reasoning or connections.',
+            'hard': 'Hard difficulty: Create challenging questions requiring deep analysis, complex reasoning, synthesis of multiple concepts, or advanced application of knowledge.'
+        };
+
+        const difficultyInstruction = difficultyDescriptions[difficulty] || difficultyDescriptions['medium'];
+
         const currentYear = new Date().getFullYear();
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -486,6 +518,8 @@ SEARCH INSTRUCTIONS:
 - Include questions about recent events, current leaders, latest discoveries, or recent changes in this field
 - Ensure all factual information is accurate as of ${currentYear}
 - Prioritize information from the last 2-3 years when relevant
+
+DIFFICULTY LEVEL: ${difficultyInstruction}
 
 QUESTION DIVERSITY & UNIQUENESS REQUIREMENTS:
 - Ensure all ${this.questionCount} questions are completely unique and cover different aspects of "${content}"
@@ -519,6 +553,8 @@ Example format:
             : `Generate exactly ${this.questionCount} multiple choice questions based on this document content: "${content.substring(0, 2000)}". 
 
 If the document contains topics that would benefit from current information, search for recent updates and developments related to the document's subject matter to enhance the questions.
+
+DIFFICULTY LEVEL: ${difficultyInstruction}
 
 QUESTION DIVERSITY & UNIQUENESS REQUIREMENTS:
 - Ensure all ${this.questionCount} questions are completely unique and cover different sections, concepts, or aspects of the document
@@ -850,6 +886,14 @@ Example format:
         document.getElementById('quiz-section').classList.add('hidden');
         document.getElementById('results-section').classList.remove('hidden');
         
+        // Show the "Quiz Same Topic Again" button if we have a topic to retake
+        const sameTopicBtn = document.getElementById('same-topic-quiz');
+        if (this.currentTopic) {
+            sameTopicBtn.classList.remove('hidden');
+        } else {
+            sameTopicBtn.classList.add('hidden');
+        }
+        
         document.getElementById('score-display').innerHTML = `
             <div class="score-summary">
                 <h3>Your Score: ${correctAnswers}/${this.questionCount} (${percentage}%)</h3>
@@ -1019,6 +1063,9 @@ Example format:
         this.questions = [];
         this.currentQuestionIndex = 0;
         this.userAnswers = [];
+        this.currentTopic = null;
+        this.currentInputType = null;
+        this.currentFileContent = null;
         
         document.getElementById('input-section').classList.remove('hidden');
         document.getElementById('quiz-section').classList.add('hidden');
@@ -1033,6 +1080,57 @@ Example format:
 
     restart() {
         this.goHome();
+    }
+
+    async retakeQuiz() {
+        if (!this.currentTopic) {
+            this.showNotification('No previous quiz topic found', 'error');
+            return;
+        }
+
+        // Reset quiz state
+        this.questions = [];
+        this.currentQuestionIndex = 0;
+        this.userAnswers = [];
+
+        // Hide results and show quiz section
+        document.getElementById('results-section').classList.add('hidden');
+        
+        const generateBtn = document.getElementById('generate-quiz');
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Creating new quiz...';
+
+        try {
+            if (!this.openaiApiKey) {
+                this.showNotification('Please enter your OpenAI API key to continue.', 'error');
+                return;
+            }
+            
+            // Detect language of content
+            const detectedLanguage = this.detectLanguage(this.currentTopic);
+            this.questions = await this.generateMCQsWithOpenAI(this.currentTopic, this.currentInputType, detectedLanguage, this.difficulty);
+            this.userAnswers = new Array(this.questionCount).fill(null);
+            this.currentQuestionIndex = 0;
+            
+            // Show success notification
+            if (this.currentInputType === 'topic') {
+                this.showNotification(`🎉 New quiz ready! ${this.questionCount} fresh questions on the same topic.`, 'success');
+            } else {
+                this.showNotification(`🎉 New quiz created from your document! ${this.questionCount} fresh questions.`, 'success');
+            }
+            
+            this.showQuizSection();
+            this.displayCurrentQuestion();
+        } catch (error) {
+            this.showNotification('Sorry, there was a problem creating your new quiz. Please try again.', 'error');
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = `
+                <span class="btn-icon">🚀</span>
+                <span class="btn-text">Start the Quiz</span>
+                <span class="btn-subtitle">${this.questionCount} questions</span>
+            `;
+        }
     }
 }
 
